@@ -21,7 +21,7 @@ const DefaultConfigPath = "/run/kde-linux-sysupdated/config.yaml"
 
 func LoadConfig(path string) Config {
 	cfg := Config{
-		EnableStore: os.Getenv("KDE_LINUX_SYSUPDATED_ENABLE_STORE") == "1",
+		EnableStore: os.Getenv("KDE_LINUX_SYSUPDATED_ENABLE_STORE") != "0",
 		ForceStore:  os.Getenv("KDE_LINUX_SYSUPDATED_FORCE_STORE") == "1",
 	}
 	data, err := os.ReadFile(path)
