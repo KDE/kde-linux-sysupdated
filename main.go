@@ -80,13 +80,26 @@ type HTTPContext struct {
 	Cached  bool
 }
 
-func newHTTPContext(url *url.URL) (HTTPContext, error) {
-	host := strings.ToLower(url.Hostname())
-	if strings.HasSuffix(host, "kde.org") {
-		return HTTPContext{URLType: OriginURLType, Cached: false}, nil
+func newHTTPContext(targetURL *url.URL) (HTTPContext, error) {
+	upstream, err := url.Parse(globalConfig.UpstreamURL)
+	if err != nil {
+		return HTTPContext{}, fmt.Errorf(
+			"invalid upstream URL: %w",
+			err,
+		)
 	}
 
-	resp, err := http.DefaultClient.Head(url.String())
+	if strings.EqualFold(
+		targetURL.Hostname(),
+		upstream.Hostname(),
+	) {
+		return HTTPContext{
+			URLType: OriginURLType,
+			Cached:  false,
+		}, nil
+	}
+
+	resp, err := http.DefaultClient.Head(targetURL.String())
 	if err != nil {
 		return HTTPContext{URLType: UnknownURLType, Cached: false}, err
 	}
@@ -145,8 +158,8 @@ func openStoreForHTTPContext(ctx HTTPContext, url *url.URL) (desync.Store, error
 	log.Println("Store usage decision:", makeStore)
 
 	if makeStore {
-		// TODO: should probably configure/detect this somehow by asking a server where the store is.
-		storeURL, err := url.Parse("https://storage.kde.org/kde-linux/sysupdate/store")
+		// TODO: should probably detect this somehow by asking a server where the store is.
+		storeURL, err := url.Parse(globalConfig.StoreURL)
 		if err != nil {
 			desync.Log.Error("Failed to parse store URL:", err)
 			panic(err)
@@ -164,15 +177,15 @@ func openStoreForHTTPContext(ctx HTTPContext, url *url.URL) (desync.Store, error
 }
 
 func file(c *gin.Context) {
-	fullpath := c.Param("file")
+	fullpath := c.Request.URL.Path
 	path := filepath.Dir(fullpath)
 	file := filepath.Base(fullpath)
 
-	// Mind that we are underneath a /kde-linux/ endpoint so our input path is always implicitly prefixed with that.
-	url, err := url.Parse("https://files.kde.org/kde-linux/" + path)
+	url, err := url.Parse(globalConfig.UpstreamURL)
 	if err != nil {
 		panic(err)
 	}
+	url = url.JoinPath(strings.TrimPrefix(path, "/"))
 
 	desync.Log.SetOutput(os.Stdout)
 
@@ -212,13 +225,13 @@ func file(c *gin.Context) {
 		panic(err)
 	}
 
-	erofses, err := filepath.Glob("/system/*.erofs")
+	erofses, err := filepath.Glob(globalConfig.SeedGlob)
 	if err != nil {
 		desync.Log.Warn("Failed to glob for erofses: ", err)
 		panic(err)
 	}
 
-	erofsStore, err := desync.NewLocalIndexStore("/system")
+	erofsStore, err := desync.NewLocalIndexStore(globalConfig.LocalIndexStorePath)
 	if err != nil {
 		panic(err)
 	}
@@ -385,8 +398,8 @@ func main() {
 	})
 	router.Use(activityTracker())
 
-	router.GET("/kde-linux/*file", file)
 	router.GET("/v1/updatesize", updateSize)
+	router.NoRoute(file)
 
 	listeners, err := activation.Listeners()
 	if err != nil {

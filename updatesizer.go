@@ -41,12 +41,12 @@ func NewUpdateSizer(version string) *UpdateSizer {
 }
 
 func (u *UpdateSizer) PrepareContext() []string {
-	erofses, err := filepath.Glob("/system/*.erofs")
+	erofses, err := filepath.Glob(globalConfig.SeedGlob)
 	if err != nil {
 		panic(err)
 	}
 
-	erofsStore, err := desync.NewLocalIndexStore("/system")
+	erofsStore, err := desync.NewLocalIndexStore(globalConfig.LocalIndexStorePath)
 	if err != nil {
 		panic(err)
 	}
@@ -77,12 +77,12 @@ func (u *UpdateSizer) PrepareContext() []string {
 }
 
 func (u *UpdateSizer) prepareRemote() error {
-	url, err := url.Parse("https://files.kde.org/kde-linux/sysupdate/v2/")
+	url, err := url.Parse(globalConfig.UpstreamURL)
 	if err != nil {
 		return fmt.Errorf("failed to parse URL: %w", err)
 	}
 
-	file := fmt.Sprintf("kde-linux_%s_root-x86-64.erofs", u.version)
+	file := fmt.Sprintf(globalConfig.ArtifactPathPattern, u.version)
 	resp, err := http.DefaultClient.Head(url.JoinPath(file + ".caibx").String())
 	if err != nil {
 		return fmt.Errorf("failed to perform HEAD request: %w", err)

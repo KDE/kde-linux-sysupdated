@@ -15,6 +15,17 @@ type Config struct {
 	EnableStore bool `yaml:"enable_store"`
 	// Force the use of the store even when the detection heuristics suggest range requests would be better.
 	ForceStore bool `yaml:"force_store"`
+	// Upstream URL to use for range requests when the store is not used.
+	UpstreamURL string `yaml:"upstream_url"`
+	// URL to use for the content addressable store.
+	StoreURL string `yaml:"store_url"`
+	// Path to the local index store on disk.
+	LocalIndexStorePath string `yaml:"local_index_store_path"`
+	// Filename pattern for update artifacts relative to UpstreamURL.
+	// Must contain exactly one %s placeholder for the version.
+	ArtifactPathPattern string `yaml:"artifact_path_pattern"`
+	// Glob pattern to match seed files.
+	SeedGlob string `yaml:"seed_glob"`
 }
 
 const DefaultConfigPath = "/run/kde-linux-sysupdated/config.yaml"
