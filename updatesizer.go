@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"path/filepath"
 
+	"github.com/acobaugh/osrelease"
 	"github.com/folbricht/desync"
 )
 
@@ -77,7 +78,16 @@ func (u *UpdateSizer) PrepareContext() []string {
 }
 
 func (u *UpdateSizer) prepareRemote() error {
-	url, err := url.Parse("https://files.kde.org/kde-linux/sysupdate/v2/")
+	os, err := osrelease.Read()
+	if err != nil {
+		return fmt.Errorf("failed to read os-release: %w", err)
+	}
+	variant_id := os["VARIANT_ID"]
+	if variant_id == "" {
+		return fmt.Errorf("VARIANT_ID not found in os-release")
+	}
+
+	url, err := url.Parse(fmt.Sprintf("https://storage.kde.org/kde-linux/%s/sysupdate/v2/", variant_id))
 	if err != nil {
 		return fmt.Errorf("failed to parse URL: %w", err)
 	}

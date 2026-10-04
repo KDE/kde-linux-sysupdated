@@ -3,6 +3,7 @@ module invent.kde.org/kde-linux/sysupdated.git
 go 1.24.4
 
 require (
+	github.com/cobaugh/osrelease v0.0.0-20211111170140-20e410975bc3
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
 	github.com/folbricht/desync v0.9.6
 	github.com/getsentry/sentry-go v0.35.0
@@ -19,6 +20,7 @@ require (
 	cloud.google.com/go/iam v0.13.0 // indirect
 	cloud.google.com/go/storage v1.30.1 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
+	github.com/acobaugh/osrelease v0.1.0 // indirect
 	github.com/boljen/go-bitmap v0.0.0-20151001105940-23cd2fb0ce7d // indirect
 	github.com/bytedance/sonic v1.11.6 // indirect
 	github.com/bytedance/sonic/loader v0.1.1 // indirect

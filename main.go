@@ -169,7 +169,7 @@ func file(c *gin.Context) {
 	file := filepath.Base(fullpath)
 
 	// Mind that we are underneath a /kde-linux/ endpoint so our input path is always implicitly prefixed with that.
-	url, err := url.Parse("https://files.kde.org/kde-linux/" + path)
+	url, err := url.Parse("https://storage.kde.org/kde-linux/" + path)
 	if err != nil {
 		panic(err)
 	}
