@@ -7,11 +7,24 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net/url"
 	"os"
+	"strings"
 
 	"github.com/coreos/go-systemd/unit"
 )
+
+func pathFromUrl(url string) (string, error) {
+	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
+		return "", fmt.Errorf("invalid URL format: %s", url)
+	}
+
+	parts := strings.SplitN(url, "/", 4)
+	if len(parts) < 4 {
+		return "", fmt.Errorf("invalid URL format: %s", url)
+	}
+
+	return "/" + parts[3], nil
+}
 
 func main() {
 	origFile := "/usr/lib/sysupdate.d/50-root-x86-64-erofs.transfer"
@@ -30,13 +43,14 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	var path *url.URL = nil
+	var path *string = nil
 	for _, option := range options {
 		if option.Section == "Source" && option.Name == "Path" {
-			path, err = url.Parse(option.Value)
+			p, err := pathFromUrl(option.Value)
 			if err != nil {
-				log.Fatalln("Failed to parse path:", err)
+				log.Fatalln("Failed to get path from URL:", err)
 			}
+			path = &p
 			break
 		}
 	}
@@ -45,7 +59,7 @@ func main() {
 	}
 
 	fmt.Println("Original Source Path:", path)
-	newPath := "http://localhost:3129" + path.Path
+	newPath := "http://localhost:3129" + *path
 	fmt.Println("New Source Path:", newPath)
 
 	newOption := unit.NewUnitOption("Source", "Path", newPath)
