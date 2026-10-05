@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// SPDX-FileCopyrightText: 2025 Harald Sitter <sitter@kde.org>
+// SPDX-FileCopyrightText: 2025-2026 Harald Sitter <sitter@kde.org>
 
 package main
 
@@ -26,21 +26,20 @@ func pathFromUrl(url string) (string, error) {
 	return "/" + parts[3], nil
 }
 
-func main() {
-	origFile := "/usr/lib/sysupdate.d/50-root-x86-64-erofs.transfer"
-	if _, err := os.Stat(origFile); err != nil {
-		log.Fatalln(err)
+func pathFromTransferFile(filePath string) (string, error) {
+	if _, err := os.Stat(filePath); err != nil {
+		return "", fmt.Errorf("failed to stat file: %w", err)
 	}
 
-	file, err := os.Open(origFile)
+	file, err := os.Open(filePath)
 	if err != nil {
-		log.Fatalln(err)
+		return "", fmt.Errorf("failed to open file: %w", err)
 	}
 	defer file.Close()
 
 	options, err := unit.Deserialize(file)
 	if err != nil {
-		log.Fatalln(err)
+		return "", fmt.Errorf("failed to deserialize unit file: %w", err)
 	}
 
 	var path *string = nil
@@ -48,18 +47,27 @@ func main() {
 		if option.Section == "Source" && option.Name == "Path" {
 			p, err := pathFromUrl(option.Value)
 			if err != nil {
-				log.Fatalln("Failed to get path from URL:", err)
+				return "", fmt.Errorf("failed to get path from URL: %w", err)
 			}
 			path = &p
 			break
 		}
 	}
 	if path == nil {
-		log.Fatalln("No Source Path found in", origFile)
+		return "", fmt.Errorf("no Source Path found in %s", filePath)
+	}
+
+	return *path, nil
+}
+
+func main() {
+	path, err := pathFromTransferFile("/usr/lib/sysupdate.d/50-root-x86-64-erofs.transfer")
+	if err != nil {
+		log.Fatalln("Failed to get path from transfer file:", err)
 	}
 
 	fmt.Println("Original Source Path:", path)
-	newPath := "http://localhost:3129" + *path
+	newPath := "http://localhost:3129" + path
 	fmt.Println("New Source Path:", newPath)
 
 	newOption := unit.NewUnitOption("Source", "Path", newPath)
