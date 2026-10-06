@@ -19,6 +19,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/acobaugh/osrelease"
 	"github.com/coreos/go-systemd/activation"
 	"github.com/folbricht/desync"
 	"github.com/fsnotify/fsnotify"
@@ -64,6 +65,36 @@ func getTargetUrl(url *url.URL) (*url.URL, error) {
 	targetURL := resp.Request.URL
 	targetURL.Path = filepath.Dir(targetURL.Path) // Use the final redirected URL base path
 	return targetURL, nil
+}
+
+func getStorageURL(osReleasePath string) (*url.URL, error) {
+	os, err := osrelease.ReadFile(osReleasePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read os-release: %w", err)
+	}
+	variant_id := os["VARIANT_ID"]
+	if variant_id == "" {
+		return nil, fmt.Errorf("VARIANT_ID not found in os-release")
+	}
+	endpoint := os["KDE_LINUX_SYSUPDATE_ENDPOINT"]
+	if endpoint == "" {
+		return nil, fmt.Errorf("KDE_LINUX_SYSUPDATE_ENDPOINT not found in os-release")
+	}
+
+	url, err := url.Parse(fmt.Sprintf("https://storage.kde.org/kde-linux/%s/%s", variant_id, endpoint))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse URL: %w", err)
+	}
+
+	return url, nil
+}
+
+func getStoreURL(osReleasePath string) (*url.URL, error) {
+	storageUrl, err := getStorageURL(osReleasePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get storage URL: %w", err)
+	}
+	return storageUrl.JoinPath("store"), nil
 }
 
 type URLType int
@@ -145,10 +176,9 @@ func openStoreForHTTPContext(ctx HTTPContext, url *url.URL) (desync.Store, error
 	log.Println("Store usage decision:", makeStore)
 
 	if makeStore {
-		// TODO: should probably configure/detect this somehow by asking a server where the store is.
-		storeURL, err := url.Parse("https://storage.kde.org/kde-linux/sysupdate/store")
+		storeURL, err := getStoreURL(osrelease.UsrLibOsRelease)
 		if err != nil {
-			desync.Log.Error("Failed to parse store URL:", err)
+			desync.Log.Error("Failed to get store URL:", err)
 			panic(err)
 		}
 		store, err := desync.NewRemoteHTTPStore(storeURL, desync.NewStoreOptionsWithDefaults())
