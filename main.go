@@ -34,14 +34,19 @@ import (
 // the hope that by the time we actually need to read from them, the request
 // has received data already.
 type PrepareReader struct {
-	Reader io.Reader
-	Next   []*PrepareReader
+	Reader   io.ReadCloser
+	Previous *PrepareReader
+	Next     []*PrepareReader
 }
 
 func (pr PrepareReader) Read(p []byte) (n int, err error) {
 	if len(p) != 0 { // Only prepare if we aren't getting prepared ourself.
 		for _, next := range pr.Next {
 			next.Prepare()
+		}
+		if pr.Previous != nil {
+			pr.Previous.Reader.Close()
+			pr.Previous = nil
 		}
 	}
 
@@ -305,7 +310,10 @@ func file(c *gin.Context) {
 
 	prepareReaders := make([]*PrepareReader, len(readClosers))
 	for i, rc := range readClosers {
-		prepareReaders[i] = &PrepareReader{Reader: rc, Next: []*PrepareReader{}} // we'll fill Next later
+		prepareReaders[i] = &PrepareReader{Reader: rc, Previous: nil, Next: []*PrepareReader{}} // we'll fill Next later
+		if i > 0 {
+			prepareReaders[i].Previous = prepareReaders[i-1]
+		}
 	}
 
 	for i, pr := range prepareReaders {
