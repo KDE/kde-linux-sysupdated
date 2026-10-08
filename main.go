@@ -63,7 +63,10 @@ func getTargetUrl(url *url.URL) (*url.URL, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Failed to get target URL: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("Upstream for EROFS index responded with %d", resp.StatusCode)
 	}
@@ -112,32 +115,48 @@ const (
 )
 
 type HTTPContext struct {
-	URLType URLType
-	Cached  bool
+	URLType    URLType
+	Cached     bool
+	AllowDelta bool
+	AllowStore bool
 }
 
 func newHTTPContext(url *url.URL) (HTTPContext, error) {
-	host := strings.ToLower(url.Hostname())
-	if strings.HasSuffix(host, "kde.org") {
-		return HTTPContext{URLType: OriginURLType, Cached: false}, nil
-	}
-
 	resp, err := http.DefaultClient.Head(url.String())
 	if err != nil {
-		return HTTPContext{URLType: UnknownURLType, Cached: false}, err
+		return HTTPContext{URLType: UnknownURLType, Cached: false, AllowDelta: false, AllowStore: false}, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
+
 	if resp.StatusCode != http.StatusOK {
-		return HTTPContext{URLType: UnknownURLType, Cached: false}, fmt.Errorf("Upstream for EROFS responded with %d", resp.StatusCode)
+		return HTTPContext{URLType: UnknownURLType, Cached: false, AllowDelta: false, AllowStore: false}, fmt.Errorf("Upstream for EROFS responded with %d", resp.StatusCode)
 	}
+
+	allowDelta := resp.Header.Get("X-KDE-Delta") != "false"
+	allowStore := allowDelta && resp.Header.Get("X-KDE-Store") != "false"
+
+	host := strings.ToLower(url.Hostname())
+	if strings.HasSuffix(host, "kde.org") {
+		return HTTPContext{URLType: OriginURLType, Cached: false, AllowDelta: allowDelta, AllowStore: allowStore}, nil
+	}
+
 	if resp.Header.Get("X-77-Cache") != "" {
 		cached := strings.EqualFold(resp.Header.Get("X-77-Cache"), "HIT")
-		return HTTPContext{URLType: CDNURLType, Cached: cached}, nil
+		return HTTPContext{URLType: CDNURLType, Cached: cached, AllowDelta: allowDelta, AllowStore: allowStore}, nil
 	}
-	return HTTPContext{URLType: MirrorURLType, Cached: true}, nil
+
+	return HTTPContext{URLType: MirrorURLType, Cached: true, AllowDelta: allowDelta, AllowStore: allowStore}, nil
 }
 
 func openStoreForHTTPContext(ctx HTTPContext, url *url.URL) (desync.Store, error) {
+	if !ctx.AllowStore {
+		log.Println("Store is not allowed for this HTTP context")
+		return nil, nil
+	}
+
 	if !globalConfig.EnableStore {
 		log.Println("Store is disabled by configuration")
 		return nil, nil
@@ -231,6 +250,12 @@ func file(c *gin.Context) {
 	httpContext, err := newHTTPContext(url.JoinPath(file))
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Failed to get URL type: %s", err)
+		return
+	}
+
+	if !httpContext.AllowDelta {
+		desync.Log.Warn("Delta is not allowed for this HTTP context. Redirecting to original URL")
+		c.Redirect(http.StatusTemporaryRedirect, url.JoinPath(file).String())
 		return
 	}
 

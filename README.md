@@ -47,3 +47,10 @@ and have to live with IO overhead blocking the stream (e.g. when we are waiting 
 
 The current desync API is a bit restrictive and required some re-implementation on our end to fully support this feature.
 Also some code copy.
+
+## Remote Control
+
+The update server may control how an update is performed by sending the following headers on a HEAD request for the relevant erofs.
+
+- X-KDE-Delta: when set to false we don't do any delta updates (full file download)
+- X-KDE-Store: when set to false we don't use the desync store (may still do HTTP range requests)
