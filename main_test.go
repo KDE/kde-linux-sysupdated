@@ -13,7 +13,7 @@ func TestGetStorageUrl(t *testing.T) {
 	url, err := getStorageURL("fixtures/os-release")
 	assert.Nil(t, err, "getStorageUrl should not return an error")
 	assert.NotNil(t, url, "URL should not be nil")
-	assert.Equal(t, "https://storage.kde.org/kde-linux/testing-buildstream/sysupdate/v2", url.String(), "url does not match")
+	assert.Equal(t, "https://kde-linux-images.s3.kde.org/testing-buildstream/sysupdate/v2", url.String(), "url does not match")
 
 	url, err = getStorageURL("/dev/null")
 	assert.NotNil(t, err, "getStorageUrl should return an error for invalid os-release path")
@@ -23,5 +23,5 @@ func TestGetStorageUrl(t *testing.T) {
 func TestGetStoreUrl(t *testing.T) {
 	url, err := getStoreURL("fixtures/os-release")
 	assert.Nil(t, err, "getStoreUrl should not return an error")
-	assert.Equal(t, "https://storage.kde.org/kde-linux/testing-buildstream/sysupdate/v2/store", url.String(), "url does not match")
+	assert.Equal(t, "https://kde-linux-images.s3.kde.org/testing-buildstream/sysupdate/v2/store", url.String(), "url does not match")
 }

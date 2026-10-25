@@ -86,7 +86,7 @@ func getStorageURL(osReleasePath string) (*url.URL, error) {
 		return nil, fmt.Errorf("KDE_LINUX_SYSUPDATE_ENDPOINT not found in os-release")
 	}
 
-	url, err := url.Parse(fmt.Sprintf("https://storage.kde.org/kde-linux/%s/%s", variant_id, endpoint))
+	url, err := url.Parse(fmt.Sprintf("https://kde-linux-images.s3.kde.org/%s/%s", variant_id, endpoint))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse URL: %w", err)
 	}
@@ -204,7 +204,7 @@ func file(c *gin.Context) {
 	file := filepath.Base(fullpath)
 
 	// Mind that we are underneath a /kde-linux/ endpoint so our input path is always implicitly prefixed with that.
-	url, err := url.Parse("https://storage.kde.org/kde-linux/" + path)
+	url, err := url.Parse("https://kde-linux-images.s3.kde.org/" + path)
 	if err != nil {
 		panic(err)
 	}
@@ -423,7 +423,7 @@ func main() {
 	})
 	router.Use(activityTracker())
 
-	router.GET("/kde-linux/*file", file)
+	router.GET("/*file", file)
 	router.GET("/v1/updatesize", updateSize)
 
 	listeners, err := activation.Listeners()
