@@ -203,7 +203,12 @@ func file(c *gin.Context) {
 	path := filepath.Dir(fullpath)
 	file := filepath.Base(fullpath)
 
-	// Mind that we are underneath a /kde-linux/ endpoint so our input path is always implicitly prefixed with that.
+	// Incredible hack because GIN doesn't handle precedence with wildcard parameter, so check inside the handler instead
+	if strings.HasPrefix(fullpath, "/v1/updatesize") {
+		updateSize(c)
+		return
+	}
+
 	url, err := url.Parse("https://kde-linux-images.s3.kde.org/" + path)
 	if err != nil {
 		panic(err)
@@ -424,7 +429,8 @@ func main() {
 	router.Use(activityTracker())
 
 	router.GET("/*file", file)
-	router.GET("/v1/updatesize", updateSize)
+	// done in file handler instead
+	// router.GET("/v1/updatesize", updateSize)
 
 	listeners, err := activation.Listeners()
 	if err != nil {
