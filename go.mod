@@ -3,13 +3,15 @@ module invent.kde.org/kde-linux/sysupdated.git
 go 1.24.4
 
 require (
-	github.com/cobaugh/osrelease v0.0.0-20211111170140-20e410975bc3
+	github.com/acobaugh/osrelease v0.1.0
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
 	github.com/folbricht/desync v0.9.6
+	github.com/fsnotify/fsnotify v1.9.0
 	github.com/getsentry/sentry-go v0.35.0
 	github.com/gin-gonic/gin v1.10.1
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spatialcurrent/go-lazy v0.0.0-20211115014721-47315cc003d1
+	github.com/stretchr/testify v1.12.1
 	golang.org/x/sync v0.16.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -20,7 +22,6 @@ require (
 	cloud.google.com/go/iam v0.13.0 // indirect
 	cloud.google.com/go/storage v1.30.1 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
-	github.com/acobaugh/osrelease v0.1.0 // indirect
 	github.com/boljen/go-bitmap v0.0.0-20151001105940-23cd2fb0ce7d // indirect
 	github.com/bytedance/sonic v1.11.6 // indirect
 	github.com/bytedance/sonic/loader v0.1.1 // indirect
@@ -28,7 +29,6 @@ require (
 	github.com/cloudwego/iasm v0.2.0 // indirect
 	github.com/dchest/siphash v1.2.3 // indirect
 	github.com/folbricht/tempfile v0.0.1 // indirect
-	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
@@ -61,7 +61,6 @@ require (
 	github.com/pkg/sftp v1.13.5 // indirect
 	github.com/pkg/xattr v0.4.9 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
-	github.com/stretchr/testify v1.12.1 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	go.opencensus.io v0.24.0 // indirect
